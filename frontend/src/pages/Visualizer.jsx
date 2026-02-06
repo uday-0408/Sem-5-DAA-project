@@ -15,22 +15,15 @@ const Visualizer = () => {
     const [array, setArray] = useState([]);
 
     // Visualization State
-    const [steps, setSteps] = useState([]);
-    const [currentStep, setCurrentStep] = useState(0);
+    const [highlightIndices, setHighlightIndices] = useState([]);
+    const [highlightType, setHighlightType] = useState('');
+    const [description, setDescription] = useState('');
+
     const [isSorting, setIsSorting] = useState(false);
 
     // Metrics State
     const [metrics, setMetrics] = useState({ comparisons: 0, swaps: 0, execution_time_ms: 0 });
     const [complexity, setComplexity] = useState({ time: '-', space: '-' });
-
-    // Step Tracking (for coloring)
-    // In a real sophisticated visualizer, we might receive diffs. 
-    // Here we have full snapshots. We can infer basics or just show the snapshot.
-    // To show "active" elements, we would need the backend to return which indices are active.
-    // For simplicity in this constraints-based request, we will visualize the array state.
-    // Advanced: We could diff steps[i] and steps[i+1] to highlight changes.
-
-    const [activeSwaps, setActiveSwaps] = useState([]);
 
     const animationRef = useRef(null);
 
@@ -39,7 +32,7 @@ const Visualizer = () => {
         handleGenerate();
     }, []);
 
-    // Regenerate when size changes (optional UX choice)
+    // Regenerate when size changes
     useEffect(() => {
         handleGenerate();
     }, [arraySize]);
@@ -48,11 +41,11 @@ const Visualizer = () => {
         if (isSorting) return;
         const newArray = generateRandomArray(arraySize);
         setArray(newArray);
-        setSteps([]);
-        setCurrentStep(0);
+        setHighlightIndices([]);
+        setHighlightType('');
+        setDescription('Ready to sort');
         setMetrics({ comparisons: 0, swaps: 0, execution_time_ms: 0 });
         setComplexity({ time: '-', space: '-' });
-        setActiveSwaps([]);
     };
 
     const handleSort = async () => {
@@ -60,55 +53,59 @@ const Visualizer = () => {
 
         try {
             setIsSorting(true);
+            setDescription("Fetching steps...");
             // Call backend
             const response = await sortArray(algorithm, array, "medium");
 
             // Setup visualization
-            setSteps(response.steps);
             setMetrics(response.metrics);
             setComplexity(response.complexity);
-            setCurrentStep(0);
 
             // Start animation loop
-            animate(response.steps);
+            if (response.steps && response.steps.length > 0) {
+                animate(response.steps, response.metrics);
+            } else {
+                setIsSorting(false);
+                setDescription("Already sorted?");
+            }
 
         } catch (error) {
             console.error(error);
             setIsSorting(false);
-            alert("Failed to fetch sorting steps from backend.");
+            setDescription("Error: Failed to fetch sorting steps.");
         }
     };
 
-    const animate = (allSteps) => {
+    const animate = (allSteps, finalMetrics) => {
         let stepIndex = 0;
 
         const runLoop = () => {
             if (stepIndex >= allSteps.length) {
                 setIsSorting(false);
-                if (allSteps.length > 0) {
-                    setArray(allSteps[allSteps.length - 1]);
-                }
-                setActiveSwaps([]);
+                setDescription("Sorting Complete!");
+                setHighlightType('finished');
+                setHighlightIndices([]);
+                // Ensure final metrics match
+                if (finalMetrics) setMetrics(finalMetrics);
                 return;
             }
 
-            const currentArrayState = allSteps[stepIndex];
+            const stepData = allSteps[stepIndex];
 
-            // Basic Diff Algorithm to highlight changes (Optional for better visuals)
-            // Compare currentArrayState with previous state to find changes
-            if (stepIndex > 0) {
-                const prevArray = allSteps[stepIndex - 1];
-                const diffIndices = [];
-                currentArrayState.forEach((val, idx) => {
-                    if (val !== prevArray[idx]) {
-                        diffIndices.push(idx);
-                    }
+            setArray(stepData.array);
+            setHighlightIndices(stepData.indices || []);
+            setHighlightType(stepData.type);
+            setDescription(stepData.description);
+
+            // Update real-time metrics if available in step data
+            if (typeof stepData.comparisons !== 'undefined') {
+                setMetrics({
+                    comparisons: stepData.comparisons,
+                    swaps: stepData.swaps,
+                    execution_time_ms: finalMetrics ? finalMetrics.execution_time_ms : 0
                 });
-                setActiveSwaps(diffIndices);
             }
 
-            setArray(currentArrayState);
-            setCurrentStep(stepIndex);
             stepIndex++;
 
             animationRef.current = setTimeout(runLoop, speed);
@@ -141,10 +138,6 @@ const Visualizer = () => {
                             DAA Sort Visualizer
                         </h1>
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>v1.0.0</span>
-                        <a href="#" className="hover:text-blue-600">Documentation</a>
-                    </div>
                 </div>
             </header>
 
@@ -167,17 +160,17 @@ const Visualizer = () => {
 
                     <BarChart
                         array={array}
-                        swaps={activeSwaps}
-                        // For simplicity, we assume sorted indices are all if finished, or none. 
-                        // To be precise we need backend to tell us sorted region.
-                        sortedIndices={!isSorting && steps.length > 0 && currentStep >= steps.length - 1 ? array.map((_, i) => i) : []}
+                        highlightIndices={highlightIndices}
+                        highlightType={highlightType}
+                        description={description}
                     />
 
                     {/* Educational Note */}
                     <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
-                        <h4 className="font-bold text-blue-900">How {algorithm} sort works:</h4>
+                        <h4 className="font-bold text-blue-900">Algorithm Logic:</h4>
                         <p className="text-blue-800 text-sm mt-1">
-                            The backend executes the algorithm step-by-step. Each frame you see represents a state of the array after a comparison or swap operation. The "Comparisons" and "Swaps" counters are updated individually in the algorithm logic.
+                            Watch the yellow bars for comparisons and red/purple bars for swaps/assignments.
+                            The backend tracks every operations step-by-step.
                         </p>
                     </div>
                 </div>
