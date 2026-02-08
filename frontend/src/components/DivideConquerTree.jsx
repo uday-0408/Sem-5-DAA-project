@@ -42,7 +42,7 @@ const TreeNode = ({ node, highlightIndices, currentPhase, algoType }) => {
     }
 
     // Styles
-    const baseStyle = "flex flex-col items-center p-2 rounded-lg border-2 transition-all duration-300 relative bg-white dark:bg-gray-800 min-w-[3.5rem]";
+    const baseStyle = "flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-300 relative bg-white dark:bg-gray-800 shadow-sm";
     let colorStyle = "border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 opacity-70";
 
     // "Sorted" or "Partitioned" nodes from the static tree data (after they are done)
@@ -65,30 +65,33 @@ const TreeNode = ({ node, highlightIndices, currentPhase, algoType }) => {
     }
 
     return (
-        <div className="flex flex-col items-center mx-1 sm:mx-2">
-            <div className={`${baseStyle} ${colorStyle}`}>
-                <div className="text-[9px] uppercase tracking-wider mb-1 font-mono opacity-60">
+        <div className="flex flex-col items-center mx-2 my-1">
+            <div className={`${baseStyle} ${colorStyle}`} style={{ minWidth: '100px' }}>
+                <div className="text-[10px] uppercase tracking-wider mb-1.5 font-mono opacity-70 font-semibold">
                     [{l}-{r}]
                 </div>
-                <div className="flex gap-0.5 justify-center flex-wrap max-w-[12rem]">
-                    {array.length <= 8 ? (
+                <div className="flex gap-1 justify-center flex-wrap" style={{ maxWidth: '180px' }}>
+                    {array.length <= 10 ? (
                         array.map((val, idx) => (
-                            <span key={idx} className={`text-[10px] w-4 text-center ${idx + l === pivotIndex ? 'font-bold text-orange-500' : ''}`}>
+                            <span 
+                                key={idx} 
+                                className={`text-[11px] px-1 py-0.5 rounded ${idx + l === pivotIndex ? 'font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30' : ''}`}
+                            >
                                 {val}
                             </span>
                         ))
                     ) : (
-                        <span className="text-[10px] italic">...{array.length} items...</span>
+                        <span className="text-[11px] italic text-gray-500 dark:text-gray-400">...{array.length} items...</span>
                     )}
                 </div>
             </div>
 
             {/* Children */}
             {!isLeaf && (
-                <div className="flex items-start justify-center gap-2 mt-4 relative">
+                <div className="flex items-start justify-center gap-4 mt-6 relative">
                     {/* Visual Connector Line */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-4 w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-                    <div className="absolute top-0 left-4 right-4 -mt-2 h-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-6 w-0.5 h-6 bg-gray-300 dark:bg-gray-600"></div>
+                    <div className="absolute top-0 left-8 right-8 -mt-3 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
 
                     {children.map((child, idx) => (
                         <TreeNode
@@ -109,21 +112,21 @@ const DivideConquerTree = ({ tree, highlightIndices, currentPhase, algoType }) =
     if (!tree || (algoType !== 'merge' && algoType !== 'quick')) return null;
 
     return (
-        <div className="w-full flex-1 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col h-[500px] transition-colors duration-300">
-            <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
-                <h3 className="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+        <div className="w-full bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col transition-colors duration-300" style={{ height: '600px' }}>
+            <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+                <h3 className="font-bold text-lg text-gray-700 dark:text-gray-200 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                     </svg>
                     Recursion Tree
                 </h3>
-                <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full font-medium">
+                <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1.5 rounded-full font-medium">
                     {algoType === 'merge' ? 'Merge Sort' : 'Quick Sort'}
                 </span>
             </div>
 
-            <div className="flex-1 overflow-auto custom-scrollbar flex justify-center py-6">
-                <div className="min-w-max">
+            <div className="flex-1 overflow-auto flex items-start justify-center py-4 px-2" style={{ scrollbarWidth: 'thin' }}>
+                <div className="inline-block min-w-max">
                     <TreeNode
                         node={tree}
                         highlightIndices={highlightIndices}
@@ -133,10 +136,19 @@ const DivideConquerTree = ({ tree, highlightIndices, currentPhase, algoType }) =
                 </div>
             </div>
 
-            <div className="mt-2 text-[10px] text-gray-400 dark:text-gray-500 flex gap-4 justify-center">
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-500"></span> Divide</div>
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-purple-500"></span> Merge</div>
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-orange-500"></span> Pivot</div>
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 flex gap-6 justify-center">
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded bg-blue-500"></span>
+                    <span>Divide</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded bg-purple-500"></span>
+                    <span>Merge</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded bg-orange-500"></span>
+                    <span>Pivot</span>
+                </div>
             </div>
         </div>
     );
