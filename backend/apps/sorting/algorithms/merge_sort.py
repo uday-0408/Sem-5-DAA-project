@@ -8,6 +8,9 @@ def merge_sort(array):
         n1 = m - l + 1
         n2 = r - m
         
+        # Log merge start
+        tracker.log_merge_start([l, r], arr, f"Merging range [{l}, {r}]")
+        
         # Create temp arrays
         L = [0] * n1
         R = [0] * n2
@@ -22,19 +25,9 @@ def merge_sort(array):
         k = l     # Initial index of merged subarray
         
         while i < n1 and j < n2:
-            # Map temp array logic to original array indices for visualization if possible
-            # L[i] originated from l+i
-            # R[j] originated from m+1+j
-            # Note: The values in arr at these indices might have been overwritten if we were doing in-place, 
-            # but here we use temp arrays so arr[k] is being overwritten.
-            # Visualizing comparison between "values" is best described.
-            tracker.log_comparison([k], arr) # Highlight where we are writing to?
-            # Or better, just log description. 
-            # Ideally we'd highlight the SOURCE blocks (l..m) and (m+1..r).
-            # But let's keep it simple: Compare values at front of L and R.
-            # Since L and R are temp, we can't highlight them on the main array chart easily if those slots in main array are being overwritten.
-            # However, until we overwrite arr[k], arr[k] holds OLD garbage (or old sorted values).
-            # Actually, standard merge sort overwrites.
+            tracker.log_comparison([l + i, m + 1 + j], arr) # Visualization: comparing front of L vs R
+            # Note: actual indices in main array are a bit tricky since we're using temp arrays
+            # But we can approximate visualization focus
             
             if L[i] <= R[j]:
                 arr[k] = L[i]
@@ -58,13 +51,44 @@ def merge_sort(array):
             j += 1
             k += 1
 
+        tracker.log_merge_end([l, r], arr, f"Merged range [{l}, {r}] complete")
+
     def merge_sort_helper(arr, l, r):
+        # Create tree node for this recursion step
+        current_node = {
+            "id": f"merge-{l}-{r}",
+            "range": [l, r],
+            "array": arr[l : r + 1], # Store snapshot
+            "phase": "divide",
+            "children": []
+        }
+
+        # Step 1: Log Divide
+        tracker.log_divide([l, r], arr, f"Div: processing range [{l}, {r}]")
+
         if l < r:
             m = l + (r - l) // 2
             
-            merge_sort_helper(arr, l, m)
-            merge_sort_helper(arr, m + 1, r)
-            merge(arr, l, m, r)
+            # Recurse
+            left_child = merge_sort_helper(arr, l, m)
+            right_child = merge_sort_helper(arr, m + 1, r)
+            
+            current_node["children"] = [left_child, right_child]
 
-    merge_sort_helper(array, 0, len(array) - 1)
-    return tracker.finalize(array)
+            # Step 2: Log Conquer (before merge)
+            tracker.log_conquer([l, r], arr, f"Conq: ready to merge [{l}, {m}] and [{m+1}, {r}]")
+            
+            # Merge
+            merge(arr, l, m, r)
+            
+            current_node["phase"] = "sorted"
+        else:
+            current_node["phase"] = "leaf"
+
+        return current_node
+
+    # Run the sort and build tree
+    root_node = merge_sort_helper(array, 0, len(array) - 1)
+    
+    # Return both linear steps and the tree structure
+    return tracker.finalize(array, dc_tree=root_node)

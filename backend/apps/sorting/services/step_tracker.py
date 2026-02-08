@@ -59,7 +59,26 @@ class StepTracker:
         description = f"Overwriting index {indices[0]} with {value}"
         self._append_step(array, "overwrite", indices, description)
 
-    def finalize(self, array):
+    def log_divide(self, indices, array, description="Dividing"):
+        self._append_step(array, "divide", indices, description)
+
+    def log_conquer(self, indices, array, description="Conquering"):
+        self._append_step(array, "conquer", indices, description)
+
+    def log_merge_start(self, indices, array, description="Starting Merge"):
+        self._append_step(array, "merge_start", indices, description)
+
+    def log_merge_end(self, indices, array, description="Merge Complete"):
+        self._append_step(array, "merge_end", indices, description)
+
+    def log_partition(self, indices, array, pivot_index):
+        description = f"Partitioning with pivot at {pivot_index}"
+        self._append_step(array, "partition", indices, description)
+
+    def log_pivot(self, indices, array, description="Pivot Selected"):
+        self._append_step(array, "pivot", indices, description)
+
+    def finalize(self, array, dc_tree=None):
         """
         Calculate final metrics and return the result dictionary.
         """
@@ -69,7 +88,7 @@ class StepTracker:
         # Ensure the final sorted state is recorded
         self._append_step(array, "finished", [], "Sorting Complete")
 
-        return {
+        result = {
             "steps": self.steps,
             "sorted_array": array,
             "metrics": {
@@ -78,3 +97,8 @@ class StepTracker:
                 "execution_time_ms": round(execution_time_ms, 4)
             }
         }
+
+        if dc_tree:
+            result["dc_tree"] = dc_tree
+
+        return result
